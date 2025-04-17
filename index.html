@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subway 单词学习</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f8f8;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            min-height: 70vh;
+        }
+
+        h1 {
+            color: #009b3a;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .word-card {
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .word-card.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .word {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #009b3a;
+            margin-bottom: 10px;
+        }
+
+        .image-container {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .phonetic {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .meaning {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .speaker {
+            background-color: #ffc72c;
+            color: #333;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            transition: all 0.3s;
+        }
+
+        .speaker:hover {
+            background-color: #e6b400;
+            transform: scale(1.05);
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .nav-btn {
+            background-color: #009b3a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            background-color: #007a2f;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress {
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 480px) {
+            .word {
+                font-size: 2rem;
+            }
+
+            .image-container {
+                width: 180px;
+                height: 180px;
+            }
+
+            .meaning {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>朕宝儿🌎与Subway🥪</h1>
+
+        <div id="word-cards-container">
+            <!-- 单词卡片将通过JavaScript动态生成 -->
+        </div>
+
+        <div class="nav-buttons">
+            <button class="nav-btn" id="prev-btn" disabled>上一页</button>
+            <button class="nav-btn" id="next-btn">下一页</button>
+        </div>
+
+        <div class="progress" id="progress">1/42</div>
+    </div>
+
+    <script>
+        // 完整单词数据
+        const words = [
+            { word: "Sandwich", phonetic: "/ˈsænwɪtʃ/", meaning: "三明治", image: "https://i.pinimg.com/736x/f5/bd/55/f5bd5510b2a1c2dac5470a3a813cfed0.jpg" },
+            { word: "Subway 6-Inch", phonetic: "/ˈsʌbweɪ sɪks ɪntʃ/", meaning: "赛百味6英寸", image: "https://i.pinimg.com/736x/f7/fb/21/f7fb217cf03885e8cb4e3dd03d57f322.jpg" },
+            { word: "Subway Footlong", phonetic: "/ˈsʌbweɪ ˈfʊtlɒŋ/", meaning: "赛百味一英尺", image: "https://i.pinimg.com/736x/4f/a2/1c/4fa21cfa842245464771af7d6c3af900.jpg" },
+            { word: "Malted Rye Bread", phonetic: "/ˈmɔːltɪd raɪ bred/", meaning: "麦芽黑麦面包", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" },
+            { word: "Wheat Bread", phonetic: "/wiːt bred/", meaning: "全麦面包", image: "https://i.pinimg.com/736x/5f/b4/c3/5fb4c3676eaec3af4e65525bc98e40c8.jpg" },
+            { word: "White Bread", phonetic: "/waɪt bred/", meaning: "白面包", image: "https://i.pinimg.com/736x/62/c2/1c/62c21c51a9459185af2496efdb468b99.jpg" },
+            { word: "Italian Herb & Cheese Bread", phonetic: "/ɪˈtæljən hɜːrb ənd tʃiːz bred/", meaning: "意大利香草奶酪面包", image: "https://i.pinimg.com/736x/48/a8/1f/48a81fc0765175f4cac83fbd468d53cb.jpg" },
+            { word: "Mozzarella", phonetic: "/ˌmɒtsəˈrelə/", meaning: "马苏里拉奶酪", image: "https://i.pinimg.com/736x/91/0a/14/910a14769085d9ce4f563f346ded3ceb.jpg" },
+            { word: "Natural Cheddar", phonetic: "/ˈnætʃrəl ˈtʃedər/", meaning: "天然切达奶酪", image: "https://i.pinimg.com/736x/de/d4/b9/ded4b97d5677c411c7a546f36b844283.jpg" },
+            { word: "Old English Style Cheese", phonetic: "/oʊld ˈɪŋɡlɪʃ staɪl tʃiːz/", meaning: "英式奶酪", image: "https://i.pinimg.com/736x/ce/93/77/ce937720a9767ef8fe4b32321e4a7f03.jpg" },
+            { word: "Toasted", phonetic: "/ˈtəʊstɪd/", meaning: "烤过的", image: "https://i.pinimg.com/736x/85/53/7a/85537a411a9d1c3f7083fd70072bad60.jpg" },
+            { word: "Double Meat", phonetic: "/ˈdʌbəl miːt/", meaning: "双倍肉", image: "https://i.pinimg.com/736x/87/0c/8a/870c8a41cfdbb5accd93d5fe2cda1611.jpg" },
+            { word: "Beetroot", phonetic: "/ˈbiːtruːt/", meaning: "甜菜根", image: "https://i.pinimg.com/736x/17/e2/f9/17e2f9d3dc8a8155d02b000da4a9c164.jpg" },
+            { word: "Double Cheese", phonetic: "/ˈdʌbəl tʃiːz/", meaning: "双倍奶酪", image: "https://i.pinimg.com/736x/ee/36/88/ee368828ce879f1990a01101bb09d36f.jpg" },
+            { word: "Extra Smoky Bacon", phonetic: "/ˈekstrə ˈsməʊki ˈbeɪkən/", meaning: "额外烟熏培根", image: "https://i.pinimg.com/736x/a0/61/33/a0613310ed7c200c4f6bc3eecfa3e282.jpg" },
+            { word: "Extra Pepperoni", phonetic: "/ˈekstrə ˌpepəˈroʊni/", meaning: "额外意大利辣香肠", image: "https://i.pinimg.com/736x/33/d5/d2/33d5d26289a30b207a4fe41ddc229077.jpg" },
+            { word: "Extra Avocado", phonetic: "/ˈekstrə ˌævəˈkɑːdoʊ/", meaning: "额外牛油果", image: "https://i.pinimg.com/736x/67/e7/46/67e746631121598d3e03f5e6a4f66b36.jpg" },
+            { word: "Lettuce", phonetic: "/ˈletɪs/", meaning: "生菜", image: "https://i.pinimg.com/736x/b2/6e/82/b26e824a1951d55ed07ec0ab2cba15e6.jpg" },
+            { word: "Spinach", phonetic: "/ˈspɪnɪtʃ/", meaning: "菠菜", image: "https://i.pinimg.com/736x/cc/55/cf/cc55cf67a7cd51b3b18b6a0b8ac566c7.jpg" },
+            { word: "Tomato", phonetic: "/təˈmɑːtoʊ/", meaning: "番茄", image: "https://i.pinimg.com/736x/82/ca/da/82cada88c5751b07a46b002394c8cc49.jpg" },
+            { word: "Cucumber", phonetic: "/ˈkjuːkʌmbər/", meaning: "黄瓜", image: "https://i.pinimg.com/736x/62/48/16/62481640e481b7a0b9c130323b472034.jpg" },
+            { word: "Pickles", phonetic: "/ˈpɪklz/", meaning: "腌黄瓜", image: "https://i.pinimg.com/736x/39/7a/18/397a18c95aa5510a2aea1ae222163136.jpg" },
+            { word: "Capsicum", phonetic: "/ˈkæpsɪkəm/", meaning: "甜椒", image: "https://i.pinimg.com/736x/0f/a6/2e/0fa62e91c17ff28804c421ff31c3aad9.jpg" },
+            { word: "Olives", phonetic: "/ˈɒlɪvz/", meaning: "橄榄", image: "https://i.pinimg.com/736x/59/24/8b/59248bea4d81c300f6d3b063020ef5ca.jpg" },
+            { word: "Onions", phonetic: "/ˈʌnjənz/", meaning: "洋葱", image: "https://i.pinimg.com/736x/06/ee/51/06ee51e88b10c1848fbfa49581af660b.jpg" },
+            { word: "Jalapenos", phonetic: "/ˌhæləˈpeɪnjəʊz/", meaning: "墨西哥辣椒", image: "https://i.pinimg.com/736x/17/e4/11/17e4111c2563f0e625653c99291cfee6.jpg" },
+            { word: "Carrots", phonetic: "/ˈkærəts/", meaning: "胡萝卜", image: "https://i.pinimg.com/736x/86/02/ed/8602edcf48f94200c3b370b68b86cdfe.jpg" },
+            { word: "Tomato Sauce", phonetic: "/təˈmɑːtoʊ sɔːs/", meaning: "番茄酱", image: "https://i.pinimg.com/736x/1c/91/b7/1c91b7564c22bd6abc3f06b8cf15938c.jpg" },
+            { word: "Chipotle Southwest Sauce", phonetic: "/tʃɪˈpɒtleɪ saʊθˈwest sɔːs/", meaning: "墨西哥烟熏酱", image: "https://i.pinimg.com/736x/c2/b6/d4/c2b6d409e5912cf2126781de03ef437c.jpg" },
+            { word: "Habanero Hot Sauce", phonetic: "/həˈbænəroʊ hɒt sɔːs/", meaning: "哈瓦那辣酱", image: "https://i.pinimg.com/736x/22/53/81/22538168c59c80dce3555eafb426299f.jpg" },
+            { word: "Blue Cheese Dressing", phonetic: "/bluː tʃiːz ˈdresɪŋ/", meaning: "蓝纹奶酪酱", image: "https://i.pinimg.com/736x/42/7e/d5/427ed52391aff2aad412cbe53073e28e.jpg" },
+            { word: "Honey Mustard Sauce", phonetic: "/ˈhʌni ˈmʌstərd sɔːs/", meaning: "蜂蜜芥末酱", image: "https://i.pinimg.com/736x/24/4b/a0/244ba02b3874435946188cc9a736dcd5.jpg" },
+            { word: "Marinara Sauce", phonetic: "/ˌmærɪˈnɑːrə sɔːs/", meaning: "意式番茄酱", image: "https://i.pinimg.com/736x/ce/dd/24/cedd245693d12bfb6157d25e24b9e63f.jpg" },
+            { word: "Mayonnaise", phonetic: "/ˈmeɪəneɪz/", meaning: "蛋黄酱", image: "https://i.pinimg.com/736x/0f/2c/f5/0f2cf53e5c7544a5450dcd7aa79aafb2.jpg" },
+            { word: "Ranch Dressing", phonetic: "/ræntʃ ˈdresɪŋ/", meaning: "美式田园沙拉酱", image: "https://i.pinimg.com/736x/64/d8/84/64d884b17b8dc8df917b54e5fbf08812.jpg" },
+            { word: "Smoky BBQ Sauce", phonetic: "/ˈsməʊki ˈbɑːbɪkjuː sɔːs/", meaning: "烟熏烧烤酱", image: "https://i.pinimg.com/736x/bd/b8/38/bdb838cf656f6568b0ea776fc8c847ea.jpg" },
+            { word: "Sweet Onion Dressing", phonetic: "/swiːt ˈʌnjən ˈdresɪŋ/", meaning: "甜洋葱酱", image: "https://i.pinimg.com/736x/5e/5b/e2/5e5be2bc356bc2d828eeeae57e17f871.jpg" },
+            { word: "Thousand Island Dressing", phonetic: "/ˈθaʊzənd ˈaɪlənd ˈdresɪŋ/", meaning: "千岛酱", image: "https://i.pinimg.com/736x/44/97/f0/4497f0f4dd847fa4c0bb816d580ed5e9.jpg" },
+            { word: "Garlic Aioli", phonetic: "/ˈɡɑːrlɪk aɪˈoʊli/", meaning: "蒜泥蛋黄酱", image: "https://i.pinimg.com/736x/bb/62/50/bb6250db589a148aeb9c65bbcdb1a8ba.jpg" },
+            { word: "Sweet Chili Sauce", phonetic: "/swiːt ˈtʃɪli sɔːs/", meaning: "甜辣酱", image: "https://i.pinimg.com/736x/50/ac/18/50ac18b3f033c6fea5a715c8e293bbea.jpg" },
+            { word: "Pepper", phonetic: "/ˈpepər/", meaning: "胡椒", image: "https://i.pinimg.com/736x/40/4c/7a/404c7acd82bd2dca0483366f69655d36.jpg" },
+            { word: "Sea Salt", phonetic: "/siː sɔːlt/", meaning: "海盐", image: "https://i.pinimg.com/736x/da/a3/9f/daa39f9bf6d52f16b18a0a4a2b06e937.jpg" }
+        ];
+
+        const wordCardsContainer = document.getElementById('word-cards-container');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const progress = document.getElementById('progress');
+        let currentIndex = 0;
+
+        // 生成单词卡片
+        function generateWordCards() {
+            words.forEach((wordData, index) => {
+                const card = document.createElement('div');
+                card.classList.add('word-card');
+                if (index === 0) {
+                    card.classList.add('active');
+                }
+                card.innerHTML = `
+                    <div class="word">${wordData.word}</div>
+                    <div class="image-container">
+                        <img src="${wordData.image}" alt="${wordData.word}">
+                    </div>
+                    <div class="phonetic">${wordData.phonetic}</div>
+                    <div class="meaning">${wordData.meaning}</div>
+                    <button class="speaker" data-word="${wordData.word}">🔊</button>
+                `;
+                wordCardsContainer.appendChild(card);
+            });
+        }
+
+        // 切换卡片
+        function showCard(index) {
+            const cards = document.querySelectorAll('.word-card');
+            cards.forEach((card, i) => {
+                if (i === index) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === words.length - 1;
+            progress.textContent = `${index + 1}/${words.length}`;
+        }
+
+        // 发音功能
+        wordCardsContainer.addEventListener('click', function (e) {
+            if (e.target.classList.contains('speaker')) {
+                const word = e.target.dataset.word;
+                function tryGoogleTTS() {
+                    const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=en&q=${encodeURIComponent(word)}&client=tw-ob`);
+                    audio.onerror = tryWebSpeechAPI;
+                    audio.play();
+                }
+
+                function tryWebSpeechAPI() {
+                    const synth = window.speechSynthesis;
+                    const utterance = new SpeechSynthesisUtterance(word);
+                    utterance.onerror = tryResponsiveVoice;
+                    synth.speak(utterance);
+                }
+
+                function tryResponsiveVoice() {
+                    if (typeof responsiveVoice!== 'undefined') {
+                        responsiveVoice.speak(word, 'UK English Female');
+                    }
+                }
+
+                tryGoogleTTS();
+            }
+        });
+
+        // 上一页按钮事件
+        prevBtn.addEventListener('click', function () {
+            if (currentIndex > 0) {
+                currentIndex--;
+                showCard(currentIndex);
+            }
+        });
+
+        // 下一页按钮事件
+        nextBtn.addEventListener('click', function () {
+            if (currentIndex < words.length - 1) {
+                currentIndex++;
+                showCard(currentIndex);
+            }
+        });
+
+        // 初始化
+        generateWordCards();
+        showCard(currentIndex);
+    </script>
+    <script src="https://code.responsivevoice.org/responsivevoice.js?key=YOUR_API_KEY"></script>
+</body>
+
+</html>
+    
