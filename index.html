@@ -224,8 +224,8 @@
         const progressElement = document.getElementById('progress');
         
         let currentIndex = 0;
-        let currentAudio = null;
         let isSpeaking = false;
+        let speechSynthesisUtterance = null;
 
         // 生成所有单词卡片
         function generateWordCards() {
@@ -271,35 +271,44 @@
 
         // 停止当前发音
         function stopCurrentSound() {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-                currentAudio = null;
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
             }
             isSpeaking = false;
+            speechSynthesisUtterance = null;
         }
 
-        // 发音功能 - 仅使用Google TTS
+        // 发音功能 - 仅使用Web Speech API
         function speakWord(word) {
             // 停止当前发音
             stopCurrentSound();
             
-            isSpeaking = true;
-            currentAudio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encodeURIComponent(word)}`);
+            if (!window.speechSynthesis) {
+                console.log('您的浏览器不支持语音合成');
+                return;
+            }
             
-            currentAudio.onended = () => {
+            isSpeaking = true;
+            speechSynthesisUtterance = new SpeechSynthesisUtterance(word);
+            speechSynthesisUtterance.lang = 'en-US';
+            
+            // 获取语音列表并选择英语语音
+            const voices = window.speechSynthesis.getVoices();
+            const englishVoice = voices.find(v => v.lang.includes('en-'));
+            if (englishVoice) {
+                speechSynthesisUtterance.voice = englishVoice;
+            }
+            
+            speechSynthesisUtterance.onend = () => {
                 isSpeaking = false;
             };
             
-            currentAudio.onerror = () => {
+            speechSynthesisUtterance.onerror = () => {
                 isSpeaking = false;
                 console.log('发音失败');
             };
             
-            currentAudio.play().catch(e => {
-                console.error('播放错误:', e);
-                isSpeaking = false;
-            });
+            window.speechSynthesis.speak(speechSynthesisUtterance);
         }
 
         // 事件监听 - 发音按钮
@@ -340,6 +349,13 @@
                 stopCurrentSound();
             }
         });
+
+        // 初始化语音合成
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = function() {
+                // 语音已加载
+            };
+        }
 
         // 初始化
         generateWordCards();
