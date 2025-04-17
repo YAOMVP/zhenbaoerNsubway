@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +16,7 @@
             min-height: 100vh;
             color: #333;
         }
-
+        
         .container {
             background-color: white;
             border-radius: 10px;
@@ -29,40 +28,35 @@
             position: relative;
             min-height: 70vh;
         }
-
+        
         h1 {
             color: #009b3a;
             margin-bottom: 30px;
             font-weight: 700;
         }
-
+        
         .word-card {
             margin-bottom: 30px;
             display: none;
         }
-
+        
         .word-card.active {
             display: block;
             animation: fadeIn 0.5s;
         }
-
+        
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-
+        
         .word {
             font-size: 2.5rem;
             font-weight: bold;
             color: #009b3a;
             margin-bottom: 10px;
         }
-
+        
         .image-container {
             width: 200px;
             height: 200px;
@@ -71,26 +65,26 @@
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-
+        
         .image-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
+        
         .phonetic {
             font-size: 1.2rem;
             color: #666;
             margin-bottom: 10px;
             font-style: italic;
         }
-
+        
         .meaning {
             font-size: 1.3rem;
             margin-bottom: 20px;
             color: #333;
         }
-
+        
         .speaker {
             background-color: #ffc72c;
             color: #333;
@@ -106,18 +100,18 @@
             margin: 0 auto;
             transition: all 0.3s;
         }
-
+        
         .speaker:hover {
             background-color: #e6b400;
             transform: scale(1.05);
         }
-
+        
         .nav-buttons {
             display: flex;
             justify-content: space-between;
             margin-top: 30px;
         }
-
+        
         .nav-btn {
             background-color: #009b3a;
             color: white;
@@ -129,54 +123,51 @@
             transition: all 0.3s;
             font-weight: bold;
         }
-
+        
         .nav-btn:hover {
             background-color: #007a2f;
             transform: translateY(-2px);
         }
-
+        
         .nav-btn:disabled {
             background-color: #ccc;
             cursor: not-allowed;
             transform: none;
         }
-
+        
         .progress {
             margin-top: 20px;
             color: #666;
             font-size: 0.9rem;
         }
-
+        
         @media (max-width: 480px) {
             .word {
                 font-size: 2rem;
             }
-
             .image-container {
                 width: 180px;
                 height: 180px;
             }
-
             .meaning {
                 font-size: 1.1rem;
             }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>朕宝儿🌎与Subway🥪</h1>
-
+        
         <div id="word-cards-container">
             <!-- 单词卡片将通过JavaScript动态生成 -->
         </div>
-
+        
         <div class="nav-buttons">
             <button class="nav-btn" id="prev-btn" disabled>上一页</button>
             <button class="nav-btn" id="next-btn">下一页</button>
         </div>
-
+        
         <div class="progress" id="progress">1/42</div>
     </div>
 
@@ -230,94 +221,128 @@
         const wordCardsContainer = document.getElementById('word-cards-container');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
-        const progress = document.getElementById('progress');
+        const progressElement = document.getElementById('progress');
+        
         let currentIndex = 0;
+        let currentAudio = null;
+        let isSpeaking = false;
 
-        // 生成单词卡片
+        // 生成所有单词卡片
         function generateWordCards() {
             words.forEach((wordData, index) => {
-                const card = document.createElement('div');
-                card.classList.add('word-card');
-                if (index === 0) {
-                    card.classList.add('active');
-                }
-                card.innerHTML = `
+                const wordCard = document.createElement('div');
+                wordCard.className = 'word-card';
+                wordCard.id = `word-card-${index}`;
+                
+                wordCard.innerHTML = `
                     <div class="word">${wordData.word}</div>
                     <div class="image-container">
-                        <img src="${wordData.image}" alt="${wordData.word}">
+                        <img src="${wordData.image}" alt="${wordData.word}" onerror="this.src='https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'">
                     </div>
                     <div class="phonetic">${wordData.phonetic}</div>
                     <div class="meaning">${wordData.meaning}</div>
                     <button class="speaker" data-word="${wordData.word}">🔊</button>
                 `;
-                wordCardsContainer.appendChild(card);
+                
+                wordCardsContainer.appendChild(wordCard);
             });
+            
+            // 显示第一个单词
+            showWord(currentIndex);
         }
 
-        // 切换卡片
-        function showCard(index) {
-            const cards = document.querySelectorAll('.word-card');
-            cards.forEach((card, i) => {
-                if (i === index) {
-                    card.classList.add('active');
-                } else {
-                    card.classList.remove('active');
-                }
+        // 显示指定索引的单词
+        function showWord(index) {
+            // 隐藏所有单词卡片
+            document.querySelectorAll('.word-card').forEach(card => {
+                card.classList.remove('active');
             });
+            
+            // 显示当前单词卡片
+            document.getElementById(`word-card-${index}`).classList.add('active');
+            
+            // 更新导航按钮状态
             prevBtn.disabled = index === 0;
             nextBtn.disabled = index === words.length - 1;
-            progress.textContent = `${index + 1}/${words.length}`;
+            
+            // 更新进度
+            progressElement.textContent = `${index + 1}/${words.length}`;
         }
 
-        // 发音功能
-        wordCardsContainer.addEventListener('click', function (e) {
+        // 停止当前发音
+        function stopCurrentSound() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            isSpeaking = false;
+        }
+
+        // 发音功能 - 仅使用Google TTS
+        function speakWord(word) {
+            // 停止当前发音
+            stopCurrentSound();
+            
+            isSpeaking = true;
+            currentAudio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encodeURIComponent(word)}`);
+            
+            currentAudio.onended = () => {
+                isSpeaking = false;
+            };
+            
+            currentAudio.onerror = () => {
+                isSpeaking = false;
+                console.log('发音失败');
+            };
+            
+            currentAudio.play().catch(e => {
+                console.error('播放错误:', e);
+                isSpeaking = false;
+            });
+        }
+
+        // 事件监听 - 发音按钮
+        wordCardsContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('speaker')) {
                 const word = e.target.dataset.word;
-                function tryGoogleTTS() {
-                    const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=en&q=${encodeURIComponent(word)}&client=tw-ob`);
-                    audio.onerror = tryWebSpeechAPI;
-                    audio.play();
-                }
-
-                function tryWebSpeechAPI() {
-                    const synth = window.speechSynthesis;
-                    const utterance = new SpeechSynthesisUtterance(word);
-                    utterance.onerror = tryResponsiveVoice;
-                    synth.speak(utterance);
-                }
-
-                function tryResponsiveVoice() {
-                    if (typeof responsiveVoice!== 'undefined') {
-                        responsiveVoice.speak(word, 'UK English Female');
-                    }
-                }
-
-                tryGoogleTTS();
+                speakWord(word);
             }
         });
 
-        // 上一页按钮事件
-        prevBtn.addEventListener('click', function () {
+        // 事件监听 - 上一页
+        prevBtn.addEventListener('click', () => {
             if (currentIndex > 0) {
                 currentIndex--;
-                showCard(currentIndex);
+                showWord(currentIndex);
+                stopCurrentSound();
             }
         });
 
-        // 下一页按钮事件
-        nextBtn.addEventListener('click', function () {
+        // 事件监听 - 下一页
+        nextBtn.addEventListener('click', () => {
             if (currentIndex < words.length - 1) {
                 currentIndex++;
-                showCard(currentIndex);
+                showWord(currentIndex);
+                stopCurrentSound();
+            }
+        });
+
+        // 键盘左右箭头导航
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                currentIndex--;
+                showWord(currentIndex);
+                stopCurrentSound();
+            } else if (e.key === 'ArrowRight' && currentIndex < words.length - 1) {
+                currentIndex++;
+                showWord(currentIndex);
+                stopCurrentSound();
             }
         });
 
         // 初始化
         generateWordCards();
-        showCard(currentIndex);
     </script>
-    <script src="https://code.responsivevoice.org/responsivevoice.js?key=YOUR_API_KEY"></script>
 </body>
-
 </html>
-    
